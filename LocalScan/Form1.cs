@@ -104,15 +104,23 @@ namespace LocalScan
 
         private void startScanToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            startScanToolStripMenuItem.Enabled = false;
             
-            string hostName = Dns.GetHostName();
-            string myIP = Dns.GetHostByName(hostName).AddressList[0].ToString();
-            var ii = myIP.Split('.');
-            string ip = $"{ii[0]}.{ii[1]}.{ii[2]}.";
-            //string ip = "192.168.10.";
-            bool net = CheckForInternetConnection();
             new Task(() =>
             {
+                string hostName = Dns.GetHostName();
+                var v = Dns.GetHostEntry(hostName);
+                var ips = /*Dns.GetHostByName(hostName)*/v.AddressList;
+                this.BeginInvoke((Action)(() =>
+                {
+                    toolStripProgressBar1.Maximum = ips.Length * 255;
+                }));
+                Parallel.ForEach(ips, myIP => {  
+                //string myIP = ips[0].ToString();
+                var ii = myIP.MapToIPv4().ToString().Split('.');
+                string ip = $"{ii[0]}.{ii[1]}.{ii[2]}.";
+                //string ip = "192.168.10.";//
+                bool net = CheckForInternetConnection();
                 Parallel.For(0, 255,
                     i =>
                     {
@@ -139,7 +147,20 @@ namespace LocalScan
                                this.dataGridView1.Rows.Add($"{ss}", $"{mac}", $"{name}", $"{vendor}");
                             }));
                         }
+                        this.BeginInvoke((Action)(() =>
+                        {
+                            this.toolStripProgressBar1.PerformStep();
+                        }));
+                        if (this.toolStripProgressBar1.Value >= this.toolStripProgressBar1.Maximum - 1)
+                        {
+                            this.BeginInvoke((Action)(() =>
+                            {
+                                startScanToolStripMenuItem.Enabled = true;
+                                this.toolStripProgressBar1.Value = 0;
+                            }));
+                        }
                     });
+                });
             }).Start();
         }
 
@@ -167,6 +188,16 @@ namespace LocalScan
         private void helpToolStripMenuItem_Click(object sender, EventArgs e)
         {
             new AboutBox1().Show();
+        }
+
+        private void fileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+
         }
     }
 }
