@@ -105,9 +105,10 @@ namespace LocalScan
         private void startScanToolStripMenuItem_Click(object sender, EventArgs e)
         {
             startScanToolStripMenuItem.Enabled = false;
-            
+            dataGridView1.Rows.Clear();
             new Task(() =>
             {
+
                 string hostName = Dns.GetHostName();
                 var v = Dns.GetHostEntry(hostName);
                 var ips = /*Dns.GetHostByName(hostName)*/v.AddressList;
